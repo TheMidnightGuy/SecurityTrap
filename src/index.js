@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs } from 'firebase/firestore/lite';
-import { getAuth, signInWithCustomToken, onAuthStateChanged } from "firebase/auth";
+import { getFirestore, collection, getDocs, setDoc, doc } from 'firebase/firestore/lite';
+import { getAuth, createUserWithEmailAndPassword ,signInWithCustomToken, onAuthStateChanged } from "firebase/auth";
 
 
 const firebaseConfig = ({
@@ -16,11 +16,61 @@ const firebaseConfig = ({
 
 // Initialize Firebase
 const app   = initializeApp(firebaseConfig);
-const db    = getFirestore(app)
-const auth  = getAuth(app)
+const db    = getFirestore(app);
+const auth  = getAuth(app);
 
 //Chequear status de Auth
 onAuthStateChanged(auth, user=> { /* check status*/ })
 
+//Mensaje dinamico
+function showMessage(message, divId){
+    var messageDiv=document.getElementById(divId);
+    messageDiv.style.display="block";
+    messageDiv.innerHTML=message;
+    messageDiv.style.opacity=1;
+    setTimeout(function(){
+        messageDiv.style.opacity=0;
+    },5000)
+}
 
+//Boton de registro
+const signUp=document.getElementById("submitSignUp");
+signUp.addEventListener("click", (event)=>{
+    event.preventDefault();
+    const email=document.getElementById("rEmail").value;
+    const password=document.getElementById("rPassword");
+    const fullname=document.getElementById("rfullname");
+    const actname=document.getElementById("rAccountname");
+
+    const auth=getAuth();
+    const db=getFirestore();
+
+    createUserWithEmailAndPassword(auth, email, password)
+    .then((userCredential)=>{
+        const user=userCredential.user;
+        const userData={
+            email: email,
+            fullname: fullname,
+            actname: actname
+        };
+        showMessage('¡Cuenta creada correctamente!', 'signUpMessage');
+        const docRef=doc(db, "users", user.uid);
+        setDoc(docRef,userData)
+        .then(()=>{
+            window.location.href='login.html';
+        })
+        .catch((error)=>{
+            console.error("error al redactar documento", error);
+        })
+    })
+    .catch((error)=>{
+        const errorCode=error.code;
+        if(errorCode=='auth/email-already-in-use'){
+            showMessage('Email ya en uso', 'signUpMessage');
+        }
+        else{
+            showMessage('No se ha podido crear usuario', 'signUpMessage');
+        }
+    })
+});
   
